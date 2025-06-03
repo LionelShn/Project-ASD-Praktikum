@@ -1,17 +1,15 @@
 #include <iostream>
-#include <queue>
 #include <string>
-
 using namespace std;
 
 class Pesanan {
-    public:
+public:
     int ID_pesanan;
     string nama_pesanan;
     string waktu;
     int harga;
 
-    Pesanan(int ID,string nm, string w, int h) {
+    Pesanan(int ID, string nm, string w, int h) {
         ID_pesanan = ID;
         nama_pesanan = nm;
         waktu = w;
@@ -19,105 +17,250 @@ class Pesanan {
     }
 };
 
-class AntrianPesanan{
-    private:
-    queue<Pesanan> pesan;
+class MenuItem {
     public:
-    void tambah_pesan(Pesanan pesanan){
-        pesan.push(pesanan);
+    string nama;
+    string waktu;
+    int harga;
+};
+
+const int JUMLAH_MENU = 5;
+MenuItem daftarMenu[JUMLAH_MENU] = {
+    {"Nasi Goreng", "10 menit", 15000},
+    {"Mie Ayam", "7 menit", 12000},
+    {"Sate Ayam", "12 menit", 20000},
+    {"Bakso", "8 menit", 13000},
+    {"Ayam Geprek", "9 menit", 18000}
+};
+
+class Node {
+    public:
+    Pesanan data;
+    Node* next;
+    Node(Pesanan p) : data(p), next(nullptr) {}
+};
+
+class AntrianPesanan {
+private:
+    Node* front;
+    Node* rear;
+
+public:
+    AntrianPesanan() : front(nullptr), rear(nullptr) {}
+
+    void tambah_pesan(Pesanan pesanan) {
+        Node* baru = new Node(pesanan);
+        if (rear == nullptr) {
+            front = rear = baru;
+        } else {
+            rear->next = baru;
+            rear = baru;
+        }
     }
 
-    void hapus_pesan(){
-        if (!pesan.empty()) {
-            pesan.pop();
-        } else {
+    void hapus_pesan() {
+        if (front == nullptr) {
             cout << "Antrian kosong" << endl;
+            return;
         }
+        Node* hapus = front;
+        front = front->next;
+        delete hapus;
+        if (front == nullptr) rear = nullptr;
     }
 
     void display() {
-        queue<Pesanan> temp = pesan;
-        if(pesan.empty()){
-            cout<<"Antrian pesanan kosong"<<endl;
+        if (front == nullptr) {
+            cout << "Antrian pesanan kosong" << endl;
             return;
-        }else{
-            while(!temp.empty()){
-                Pesanan current = temp.front();
-                cout<<"ID pesanan : "<<current.ID_pesanan<<" ";
-                cout<<"Nama pesanan : "<<current.nama_pesanan<<" ";
-                cout<<"Lama pesanan : "<<current.waktu<<" ";
-                cout<<"Harga pesanan : Rp"<<current.harga<<endl<<" ";
-                temp.pop();
-            }
+        }
+        Node* temp = front;
+        while (temp != nullptr) {
+            Pesanan& current = temp->data;
+            cout << "ID pesanan     : " << current.ID_pesanan << endl;
+            cout << "Nama pesanan   : " << current.nama_pesanan << endl;
+            cout << "Lama pesanan   : " << current.waktu << endl;
+            cout << "Harga pesanan  : Rp" << current.harga << endl;
+            cout << "--------------------------" << endl;
+            temp = temp->next;
         }
     }
 
-    bool hapus_ID(int id_pilihan){
-        if(pesan.empty()){
-            cout<<"Antrian kosong"<<endl;
+    bool hapus_ID(int id_pilihan) {
+        if (front == nullptr) {
+            cout << "Antrian kosong" << endl;
             return false;
         }
-        queue<Pesanan> temp;
-        bool found = false;
-        while(!pesan.empty()){
-            Pesanan current = pesan.front();
-            pesan.pop();
-            if(current.ID_pesanan == id_pilihan){
-                found = true;
-            }else{
-                temp.push(current);
+
+        Node* current = front;
+        Node* prev = nullptr;
+
+        while (current != nullptr) {
+            if (current->data.ID_pesanan == id_pilihan) {
+                if (prev == nullptr) {
+                    front = front->next;
+                } else {
+                    prev->next = current->next;
+                }
+
+                if (current == rear) {
+                    rear = prev;
+                }
+
+                delete current;
+                cout << "Pesanan dengan ID " << id_pilihan << " berhasil dihapus." << endl;
+                return true;
             }
+            prev = current;
+            current = current->next;
         }
-        pesan = temp;
-        if(!found){
-            cout<<"Tidak ada pesanan"<<endl;
-        }
-        return found;
+
+        cout << "Tidak ada pesanan dengan ID " << id_pilihan << endl;
+        return false;
     }
 
-    
+    void update(int id_pilihan) {
+        if (front == nullptr) {
+            cout << "Antrian kosong" << endl;
+            return;
+        }
+
+        Node* current = front;
+        while (current != nullptr) {
+            if (current->data.ID_pesanan == id_pilihan) {
+                cout << "\n=== Daftar Menu Baru ===" << endl;
+                for (int i = 0; i < JUMLAH_MENU; ++i) {
+                    cout << i + 1 << ". " << daftarMenu[i].nama
+                         << " (" << daftarMenu[i].waktu
+                         << ", Rp" << daftarMenu[i].harga << ")\n";
+                }
+
+                int pilihanMenu;
+                cout << "Pilih menu baru (1-" << JUMLAH_MENU << "): ";
+                cin >> pilihanMenu;
+
+                if (pilihanMenu < 1 || pilihanMenu > JUMLAH_MENU) {
+                    cout << "Pilihan tidak valid!" << endl;
+                    return;
+                }
+
+                MenuItem m = daftarMenu[pilihanMenu - 1];
+                current->data.nama_pesanan = m.nama;
+                current->data.waktu = m.waktu;
+                current->data.harga = m.harga;
+
+                cout << "Pesanan berhasil diupdate." << endl;
+                return;
+            }
+            current = current->next;
+        }
+
+        cout << "Pesanan dengan ID " << id_pilihan << " tidak ditemukan." << endl;
+    }
+
+    void search(int id_pilihan) {
+        if (front == nullptr) {
+            cout << "Antrian kosong" << endl;
+            return;
+        }
+
+        Node* current = front;
+        while (current != nullptr) {
+            if (current->data.ID_pesanan == id_pilihan) {
+                cout << "Pesanan ditemukan:\n";
+                cout << "ID pesanan     : " << current->data.ID_pesanan << endl;
+                cout << "Nama pesanan   : " << current->data.nama_pesanan << endl;
+                cout << "Waktu pesanan  : " << current->data.waktu << endl;
+                cout << "Harga pesanan  : Rp" << current->data.harga << endl;
+                cout << "--------------------------" << endl;
+                return;
+            }
+            current = current->next;
+        }
+
+        cout << "Pesanan dengan ID " << id_pilihan << " tidak ditemukan." << endl;
+    }
 };
 
-int main (){
+void menu(AntrianPesanan &antrian) {
+    int pilihan;
+    do {
+        cout << "\n=== MENU ANTRIAN PESANAN ===" << endl;
+        cout << "1. Tambah Pesanan" << endl;
+        cout << "2. Tampilkan Antrian" << endl;
+        cout << "3. Hapus Pesanan Depan" << endl;
+        cout << "4. Hapus Pesanan Berdasarkan ID" << endl;
+        cout << "5. Update Pesanan Berdasarkan ID" << endl;
+        cout << "6. Cari Pesanan Berdasarkan ID" << endl;
+        cout << "0. Keluar" << endl;
+        cout << "Pilih menu: ";
+        cin >> pilihan;
+
+        switch (pilihan) {
+            case 1: {
+                int id, pilihanMenu;
+                cout << "Masukkan ID Pesanan: ";
+                cin >> id;
+
+                cout << "\n=== Daftar Menu ===" << endl;
+                for (int i = 0; i < JUMLAH_MENU; ++i) {
+                    cout << i + 1 << ". " << daftarMenu[i].nama
+                         << " (" << daftarMenu[i].waktu
+                         << ", Rp" << daftarMenu[i].harga << ")\n";
+                }
+
+                cout << "Pilih menu (1-" << JUMLAH_MENU << "): ";
+                cin >> pilihanMenu;
+
+                if (pilihanMenu < 1 || pilihanMenu > JUMLAH_MENU) {
+                    cout << "Pilihan menu tidak valid!" << endl;
+                    break;
+                }
+
+                MenuItem m = daftarMenu[pilihanMenu - 1];
+                Pesanan p(id, m.nama, m.waktu, m.harga);
+                antrian.tambah_pesan(p);
+                cout << "Pesanan berhasil ditambahkan!" << endl;
+                break;
+            }
+            case 2:
+                antrian.display();
+                break;
+            case 3:
+                antrian.hapus_pesan();
+                break;
+            case 4: {
+                int id;
+                cout << "Masukkan ID yang ingin dihapus: ";
+                cin >> id;
+                antrian.hapus_ID(id);
+                break;
+            }
+            case 5: {
+                int id;
+                cout << "Masukkan ID pesanan yang ingin diupdate: ";
+                cin >> id;
+                antrian.update(id);
+                break;
+            }
+            case 6: {
+                int id;
+                cout << "Masukkan ID pesanan yang ingin dicari: ";
+                cin >> id;
+                antrian.search(id);
+                break;
+            }
+            case 0:
+                cout << "Keluar dari program." << endl;
+                break;
+            default:
+                cout << "Pilihan tidak valid!" << endl;
+        }
+    } while (pilihan != 0);
+}
+
+int main() {
     AntrianPesanan antrian_pesanan;
-
-    Pesanan p1(101, "Nasi Goreng Spesial", "15 menit", 25000);
-    Pesanan p2(202, "Mie Ayam Bakso", "10 menit", 18000);
-    Pesanan p3(305, "Soto Ayam Lamongan", "20 menit", 22000);
-    Pesanan p4(101, "Nasi Goreng Gila", "18 menit", 27000); // ID sama dengan p1
-    Pesanan p5(400, "Gado-Gado", "12 menit", 15000);
-
-
-    antrian_pesanan.tambah_pesan(p1);
-    antrian_pesanan.tambah_pesan(p2);
-    antrian_pesanan.tambah_pesan(p3);
-    antrian_pesanan.tambah_pesan(p4);
-    antrian_pesanan.tambah_pesan(p5);
-
-    cout << "Antrian Awal:"<<endl;
-    antrian_pesanan.display();
-
-    cout << "\nMenghapus pesanan dengan ID 202 (Mie Ayam Bakso):" << endl;
-    if (antrian_pesanan.hapus_ID(202)) {
-        cout << "Penghapusan berhasil." << endl;
-    } else {
-        cout << "Penghapusan gagal." << endl;
-    }
-    antrian_pesanan.display();
-
-    cout << "\nMenghapus pesanan dengan ID 999 (tidak ada):" << endl;
-    antrian_pesanan.hapus_ID(999);
-    antrian_pesanan.display();
-
-    cout << "\nMenghapus pesanan dengan ID 101 (akan menghapus semua yang cocok):" << endl;
-    // Implementasi ini akan menghapus SEMUA pesanan dengan ID yang cocok
-    // Jika hanya ingin menghapus satu, modifikasi diperlukan
-    antrian_pesanan.hapus_ID(101);
-    antrian_pesanan.display();
-    
-    cout << "\nMenghapus pesanan depan:" << endl;
-    antrian_pesanan.hapus_pesan();
-    antrian_pesanan.display();
-
+    menu(antrian_pesanan);
     return 0;
-    }
+}
