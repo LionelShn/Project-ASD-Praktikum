@@ -154,6 +154,8 @@ public:
         }
 
         Node* current = front;
+        Node* prev = nullptr;
+
         while (current != nullptr) {
             if (current->data.ID_pesanan == id_pilihan) {
                 cout << "\n=== Daftar Menu Baru ===" << endl;
@@ -172,21 +174,39 @@ public:
                     cout << "Pilihan tidak valid!" << endl;
                     return;
                 }
-
                 MenuItem m = daftarMenu[pilihanMenu - 1];
-                current->data.nama_pesanan = m.nama;
-                current->data.waktu = m.waktu;
-                current->data.harga = m.harga;
-                current->data.prioritas = m.prioritas;
+                Pesanan pesanan_baru(
+                    current->data.ID_pesanan, 
+                    m.nama,
+                    m.waktu,
+                    m.harga,
+                    current->data.jenis_pesanan, 
+                    m.prioritas
+                );
 
-                cout << "Pesanan berhasil diupdate." << endl;
+                if (prev == nullptr) {
+                    front = current->next;
+                } else {
+                    prev->next = current->next;
+                }
+                if (current == rear) {
+                    rear = prev;
+                }
+                delete current;
+
+                tambah_pesan(pesanan_baru);
+
+                cout << "Pesanan berhasil diupdate dan dipindahkan sesuai prioritas baru." << endl;
                 return;
             }
+
+            prev = current;
             current = current->next;
         }
 
         cout << "Pesanan dengan ID " << id_pilihan << " tidak ditemukan." << endl;
     }
+
 
     void search(int id_pilihan) {
         if (front == nullptr) {
