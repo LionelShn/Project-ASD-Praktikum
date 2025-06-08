@@ -2,39 +2,53 @@
 #include <string>
 using namespace std;
 
+class IDGen {
+public:
+    static int currentID;
+    static int nextID() {
+        return currentID++;
+    }
+};
+int IDGen::currentID = 1;
+
 class Pesanan {
 public:
     int ID_pesanan;
     string nama_pesanan;
     string waktu;
     int harga;
+    int jenis_pesanan; // 1 = Gojek, 2 = Dine-in
+    int prioritas;     // 1 = paling cepat dimasak
 
-    Pesanan(int ID, string nm, string w, int h) {
+    Pesanan(int ID, string nm, string w, int h, int jp, int pr) {
         ID_pesanan = ID;
         nama_pesanan = nm;
         waktu = w;
         harga = h;
+        jenis_pesanan = jp;
+        prioritas = pr;
     }
 };
 
 class MenuItem {
-    public:
+public:
     string nama;
     string waktu;
     int harga;
+    int prioritas;
 };
 
 const int JUMLAH_MENU = 5;
 MenuItem daftarMenu[JUMLAH_MENU] = {
-    {"Nasi Goreng", "10 menit", 15000},
-    {"Mie Ayam", "7 menit", 12000},
-    {"Sate Ayam", "12 menit", 20000},
-    {"Bakso", "8 menit", 13000},
-    {"Ayam Geprek", "9 menit", 18000}
+    {"Mie Ayam", "7 menit", 12000, 1},
+    {"Bakso", "8 menit", 13000, 2},
+    {"Ayam Geprek", "9 menit", 18000, 3},
+    {"Nasi Goreng", "10 menit", 15000, 4},
+    {"Sate Ayam", "12 menit", 20000, 5}
 };
 
 class Node {
-    public:
+public:
     Pesanan data;
     Node* next;
     Node(Pesanan p) : data(p), next(nullptr) {}
@@ -50,12 +64,23 @@ public:
 
     void tambah_pesan(Pesanan pesanan) {
         Node* baru = new Node(pesanan);
-        if (rear == nullptr) {
-            front = rear = baru;
-        } else {
-            rear->next = baru;
-            rear = baru;
+
+        if (front == nullptr || pesanan.prioritas < front->data.prioritas) {
+            baru->next = front;
+            front = baru;
+            if (rear == nullptr) rear = baru;
+            return;
         }
+
+        Node* temp = front;
+        while (temp->next != nullptr && temp->next->data.prioritas <= pesanan.prioritas) {
+            temp = temp->next;
+        }
+
+        baru->next = temp->next;
+        temp->next = baru;
+
+        if (baru->next == nullptr) rear = baru;
     }
 
     void hapus_pesan() {
@@ -81,6 +106,8 @@ public:
             cout << "Nama pesanan   : " << current.nama_pesanan << endl;
             cout << "Lama pesanan   : " << current.waktu << endl;
             cout << "Harga pesanan  : Rp" << current.harga << endl;
+            cout << "Jenis pesanan  : " << (current.jenis_pesanan == 1 ? "Gojek" : "Dine-in") << endl;
+            cout << "Prioritas      : " << current.prioritas << endl;
             cout << "--------------------------" << endl;
             temp = temp->next;
         }
@@ -99,7 +126,8 @@ public:
             if (current->data.ID_pesanan == id_pilihan) {
                 if (prev == nullptr) {
                     front = front->next;
-                } else {
+                }
+                else {
                     prev->next = current->next;
                 }
 
@@ -131,8 +159,9 @@ public:
                 cout << "\n=== Daftar Menu Baru ===" << endl;
                 for (int i = 0; i < JUMLAH_MENU; ++i) {
                     cout << i + 1 << ". " << daftarMenu[i].nama
-                         << " (" << daftarMenu[i].waktu
-                         << ", Rp" << daftarMenu[i].harga << ")\n";
+                        << " (" << daftarMenu[i].waktu
+                        << ", Rp" << daftarMenu[i].harga
+                        << ", Prioritas " << daftarMenu[i].prioritas << ")\n";
                 }
 
                 int pilihanMenu;
@@ -148,6 +177,7 @@ public:
                 current->data.nama_pesanan = m.nama;
                 current->data.waktu = m.waktu;
                 current->data.harga = m.harga;
+                current->data.prioritas = m.prioritas;
 
                 cout << "Pesanan berhasil diupdate." << endl;
                 return;
@@ -172,6 +202,8 @@ public:
                 cout << "Nama pesanan   : " << current->data.nama_pesanan << endl;
                 cout << "Waktu pesanan  : " << current->data.waktu << endl;
                 cout << "Harga pesanan  : Rp" << current->data.harga << endl;
+                cout << "Jenis pesanan  : " << (current->data.jenis_pesanan == 1 ? "Gojek" : "Dine-in") << endl;
+                cout << "Prioritas      : " << current->data.prioritas << endl;
                 cout << "--------------------------" << endl;
                 return;
             }
@@ -182,7 +214,7 @@ public:
     }
 };
 
-void menu(AntrianPesanan &antrian) {
+void menu(AntrianPesanan& antrian) {
     int pilihan;
     do {
         cout << "\n=== MENU ANTRIAN PESANAN ===" << endl;
@@ -197,64 +229,67 @@ void menu(AntrianPesanan &antrian) {
         cin >> pilihan;
 
         switch (pilihan) {
-            case 1: {
-                int id, pilihanMenu;
-                cout << "Masukkan ID Pesanan: ";
-                cin >> id;
+        case 1: {
+            int id = IDGen::nextID();
+            int pilihanMenu, jenis;
 
-                cout << "\n=== Daftar Menu ===" << endl;
-                for (int i = 0; i < JUMLAH_MENU; ++i) {
-                    cout << i + 1 << ". " << daftarMenu[i].nama
-                         << " (" << daftarMenu[i].waktu
-                         << ", Rp" << daftarMenu[i].harga << ")\n";
-                }
+            cout << "Jenis pesanan (1 = Gojek, 2 = Dine-in): ";
+            cin >> jenis;
 
-                cout << "Pilih menu (1-" << JUMLAH_MENU << "): ";
-                cin >> pilihanMenu;
+            cout << "\n=== Daftar Menu ===" << endl;
+            for (int i = 0; i < JUMLAH_MENU; ++i) {
+                cout << i + 1 << ". " << daftarMenu[i].nama
+                    << " (" << daftarMenu[i].waktu
+                    << ", Rp" << daftarMenu[i].harga
+                    << ", Prioritas " << daftarMenu[i].prioritas << ")\n";
+            }
 
-                if (pilihanMenu < 1 || pilihanMenu > JUMLAH_MENU) {
-                    cout << "Pilihan menu tidak valid!" << endl;
-                    break;
-                }
+            cout << "Pilih menu (1-" << JUMLAH_MENU << "): ";
+            cin >> pilihanMenu;
 
-                MenuItem m = daftarMenu[pilihanMenu - 1];
-                Pesanan p(id, m.nama, m.waktu, m.harga);
-                antrian.tambah_pesan(p);
-                cout << "Pesanan berhasil ditambahkan!" << endl;
+            if (pilihanMenu < 1 || pilihanMenu > JUMLAH_MENU) {
+                cout << "Pilihan menu tidak valid!" << endl;
                 break;
             }
-            case 2:
-                antrian.display();
-                break;
-            case 3:
-                antrian.hapus_pesan();
-                break;
-            case 4: {
-                int id;
-                cout << "Masukkan ID yang ingin dihapus: ";
-                cin >> id;
-                antrian.hapus_ID(id);
-                break;
-            }
-            case 5: {
-                int id;
-                cout << "Masukkan ID pesanan yang ingin diupdate: ";
-                cin >> id;
-                antrian.update(id);
-                break;
-            }
-            case 6: {
-                int id;
-                cout << "Masukkan ID pesanan yang ingin dicari: ";
-                cin >> id;
-                antrian.search(id);
-                break;
-            }
-            case 0:
-                cout << "Keluar dari program." << endl;
-                break;
-            default:
-                cout << "Pilihan tidak valid!" << endl;
+
+            MenuItem m = daftarMenu[pilihanMenu - 1];
+            Pesanan p(id, m.nama, m.waktu, m.harga, jenis, m.prioritas);
+            antrian.tambah_pesan(p);
+            cout << "Pesanan berhasil ditambahkan!" << endl;
+            break;
+        }
+        case 2:
+            antrian.display();
+            break;
+        case 3:
+            antrian.hapus_pesan();
+            break;
+        case 4: {
+            int id;
+            cout << "Masukkan ID yang ingin dihapus: ";
+            cin >> id;
+            antrian.hapus_ID(id);
+            break;
+        }
+        case 5: {
+            int id;
+            cout << "Masukkan ID pesanan yang ingin diupdate: ";
+            cin >> id;
+            antrian.update(id);
+            break;
+        }
+        case 6: {
+            int id;
+            cout << "Masukkan ID pesanan yang ingin dicari: ";
+            cin >> id;
+            antrian.search(id);
+            break;
+        }
+        case 0:
+            cout << "Keluar dari program." << endl;
+            break;
+        default:
+            cout << "Pilihan tidak valid!" << endl;
         }
     } while (pilihan != 0);
 }
